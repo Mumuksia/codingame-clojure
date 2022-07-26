@@ -5,8 +5,12 @@
             [ring.middleware.defaults :refer :all]
             [clojure.pprint :as pp]
             [clojure.data.json :as json]
-            [codingame-clojure.mantra.auction :as auc])
+            [codingame-clojure.mantra.auction :as auc]
+            [codingame-clojure.cg.retrotypewriter :as rtw])
   (:gen-class))
+
+(defn test-epl []
+  (auc/epl-stripped (auc/epl)))
 
 (defn simple-body-page [req]
   {:status  200
@@ -19,7 +23,7 @@
    :headers {"Content-Type" "text/html"}
    :body    (->
               (pp/pprint req)
-              (str (json/write-str (auc/top-players (:ranking (:params req)))) ))})
+              (str (json/write-str (auc/by-pos-club (:pos (:params req)) (:club (:params req)))) ))})
 
 (defroutes app-routes
            (GET "/" [] simple-body-page)

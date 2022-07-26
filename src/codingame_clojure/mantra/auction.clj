@@ -7,8 +7,16 @@
             [ring.middleware.defaults :refer :all]
             [clojure.pprint :as pp]
             [clojure.string :as str]
-            [clojure.data.json :as json])
+            [clojure.data.json :as json]
+            [clojure.string :as string])
   (:gen-class))
+
+(defn remove-keys [pred m]
+  (apply dissoc m (filter pred (keys m))))
+
+(defn pos-eq [pos players]
+  (filter #(or (= (% :pos1) pos) (= (% :pos2) pos) (= (% :pos3) pos)) players)
+  )
 
 (def csv-file (.getFile  (clojure.java.io/resource "epl_players_22.csv")))
 
@@ -31,8 +39,24 @@
          (doall))))
 
 (defn epl []
-  (map (fn [x] (update-in x [:total_avg] #(Double/parseDouble %)))
-       (rest (load-csv "resources/epl_players_22.csv"))))
+  (filter #(> (% :total_avg) 0) (map (fn [x] (update-in x [:total_avg] #(Double/parseDouble %)))
+                  (rest (load-csv "resources/epl_players_22.csv")))))
+
+(defn epl-stripped [players]
+  (filter #(> (% :games) 7) (map (fn [x] (update-in x [:games] #(Long/parseLong %))) players))
+  )
+
+(defn by-pos-club [pos club]
+  (sort-by :total_avg (map #(dissoc % :pos1 :pos2 :pos3 )
+                           (pos-eq pos
+                                   (filter #(clojure.string/includes? (% :team) club)
+                                           (epl-stripped (epl))))))
+  )
+
+
+(defn ave-pos [pos n]
+  (/ (reduce + (take-last n (map :total_avg (by-pos-club pos "")))) n)
+  )
 
 (def typetrans {:avg #(Double/parseDouble %) :total_avg #(Double/parseDouble %)})
 
